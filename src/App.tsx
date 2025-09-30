@@ -1,5 +1,16 @@
 import React, { useState } from 'react';
+import { createClient } from '@supabase/supabase-js';
 import { Store, Phone, MapPin, Clock, Bell, Leaf, Star } from 'lucide-react';
+
+// Initialize Supabase client
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_KEY;
+
+if (!supabaseUrl || !supabaseKey) {
+  throw new Error('Missing Supabase environment variables');
+}
+
+const supabase = createClient(supabaseUrl, supabaseKey);
 
 function App() {
   const [formData, setFormData] = useState({
@@ -8,7 +19,9 @@ function App() {
     phone: '',
     email: ''
   });
-  const [isSubscribed, setIsSubscribed] = useState(false);
+  const [isSubmitted, setIsSubmitted] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
 
   interface FormData {
     firstName: string;
@@ -24,23 +37,57 @@ function App() {
     setFormData((prev: FormData) => ({ ...prev, [name]: value }));
   };
 
-  interface SubscribeEvent extends React.MouseEvent<HTMLButtonElement, MouseEvent> {}
+  interface FormSubmitEvent extends React.FormEvent<HTMLFormElement> {}
 
-  interface SubscribeHandler {
-    (e: SubscribeEvent): void;
-  }
-
-  const handleSubscribe: SubscribeHandler = (e) => {
+  const handleSubscribe = async (e: FormSubmitEvent) => {
     e.preventDefault();
-    if (
-      formData.firstName.trim() &&
-      formData.lastName.trim() &&
-      formData.phone.trim() &&
-      formData.email.trim()
-    ) {
-      setIsSubscribed(true);
+    setIsLoading(true);
+    setError('');
+
+    // Client-side validation
+    if (!formData.firstName || !formData.lastName || !formData.phone || !formData.email) {
+      setError('First name, last name, phone number, and email are required');
+      setIsLoading(false);
+      return;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(formData.email)) {
+      setError('Invalid email address');
+      setIsLoading(false);
+      return;
+    }
+
+    const phoneRegex = /^\+?[\d\s-]{10,}$/;
+    if (!phoneRegex.test(formData.phone)) {
+      setError('Invalid phone number');
+      setIsLoading(false);
+      return;
+    }
+
+    try {
+      const { error: dbError } = await supabase
+        .from('store_waitlist')
+        .insert({
+          first_name: formData.firstName,
+          last_name: formData.lastName,
+          phone: formData.phone,
+          email: formData.email,
+          created_at: new Date().toISOString(),
+        });
+
+      if (dbError) {
+        setError('Error saving to database: ' + dbError.message);
+        setIsLoading(false);
+        return;
+      }
+
+      setIsSubmitted(true);
       setFormData({ firstName: '', lastName: '', phone: '', email: '' });
-      setTimeout(() => setIsSubscribed(false), 3000);
+    } catch (err) {
+      setError('Network error. Please try again later.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -94,14 +141,21 @@ function App() {
                 </p>
               </div>
             
-              {!isSubscribed ? (
-                <div className="space-y-4">
+              {isSubmitted ? (
+                <div className="bgpornographicp-6 text-center">
+                  <Star className="h-8 w-8 text-primary mx-auto mb-3" />
+                  <p className="text-primary font-bold text-lg mb-1">You're on the list!</p>
+                  <p className="text-secondary">We'll email you when we launch.</p>
+                </div>
+              ) : (
+                <form onSubmit={handleSubscribe} className="space-y-4">
                   <input
                     type="text"
                     name="firstName"
                     value={formData.firstName}
                     onChange={handleInputChange}
-                    placeholder="First Name"
+                    placeholder="First Name *"
+                    required
                     className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-all"
                   />
                   <input
@@ -109,7 +163,8 @@ function App() {
                     name="lastName"
                     value={formData.lastName}
                     onChange={handleInputChange}
-                    placeholder="Last Name"
+                    placeholder="Last Name *"
+                    required
                     className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-all"
                   />
                   <input
@@ -117,7 +172,8 @@ function App() {
                     name="phone"
                     value={formData.phone}
                     onChange={handleInputChange}
-                    placeholder="Phone Number"
+                    placeholder="Phone Number *"
+                    required
                     className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-all"
                   />
                   <input
@@ -125,22 +181,28 @@ function App() {
                     name="email"
                     value={formData.email}
                     onChange={handleInputChange}
-                    placeholder="Email Address"
+                    placeholder="Email Address *"
+                    required
                     className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-all"
                   />
+                  {error && (
+                    <div className="bg-red-50 border-2 border-red-200 rounded-lg p-4">
+                      <p className="text-red-700 text-sm">{error}</p>
+                    </div>
+                  )}
                   <button
-                    onClick={handleSubscribe}
-                    className="w-full bg-primary text-white py-3 rounded-lg font-bold hover:bg-secondary transition-colors shadow-lg"
+                    type="submit"
+                    disabled={isLoading}
+                    className={`w-full bg-primary text-white py-3 rounded-lg font-bold transition-colors shadow-lg ${
+                      isLoading ? 'opacity-50 cursor-not-allowed' : 'hover:bg-secondary'
+                    }`}
                   >
-                    NOTIFY ME
+                    {isLoading ? 'Submitting...' : 'NOTIFY ME'}
                   </button>
-                </div>
-              ) : (
-                <div className="bg-green-50 border-2 border-primary rounded-lg p-6 text-center">
-                  <Star className="h-8 w-8 text-primary mx-auto mb-3" />
-                  <p className="text-primary font-bold text-lg mb-1">You're on the list!</p>
-                  <p className="text-secondary">We'll email you when we launch.</p>
-                </div>
+                  <p className="text-xs text-gray-500 text-center">
+                    By signing up, you agree to receive updates about our online store launch. You can unsubscribe at any time.
+                  </p>
+                </form>
               )}
             </div>
           </div>
