@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Store, Phone, MapPin, Clock, Bell, Leaf, Star } from 'lucide-react';
+import { supabase } from './supabaseClient';
 
 function App() {
   const [formData, setFormData] = useState({
@@ -30,7 +31,7 @@ function App() {
     (e: SubscribeEvent): void;
   }
 
-  const handleSubscribe: SubscribeHandler = (e) => {
+  const handleSubscribe: SubscribeHandler = async (e) => {
     e.preventDefault();
     if (
       formData.firstName.trim() &&
@@ -38,9 +39,24 @@ function App() {
       formData.phone.trim() &&
       formData.email.trim()
     ) {
-      setIsSubscribed(true);
-      setFormData({ firstName: '', lastName: '', phone: '', email: '' });
-      setTimeout(() => setIsSubscribed(false), 3000);
+      // Send to Supabase
+      const { error } = await supabase
+        .from('daveens_store_waitlist')
+        .insert([
+          {
+            first_name: formData.firstName,
+            last_name: formData.lastName,
+            phone: formData.phone,
+            email: formData.email,
+          },
+        ]);
+      if (!error) {
+        setIsSubscribed(true);
+        setFormData({ firstName: '', lastName: '', phone: '', email: '' });
+        setTimeout(() => setIsSubscribed(false), 3000);
+      } else {
+        alert('There was an error subscribing. Please try again.');
+      }
     }
   };
 
