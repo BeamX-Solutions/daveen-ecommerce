@@ -59,8 +59,9 @@ function App() {
                 <p className="text-xs text-gray-600 -mt-1">African Food & Grocery</p>
               </div>
             </div>
-            <a href="tel:3125811279" className="text-primary font-semibold text-sm hover:text-secondary">
-              (312) 581-1279
+            <a href="tel:3125811279" className="flex items-center space-x-2 text-primary font-semibold text-sm hover:text-secondary">
+              <Phone className="h-5 w-5" />
+              <span>(312) 581-1279</span>
             </a>
           </div>
         </div>
