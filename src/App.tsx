@@ -2,22 +2,52 @@ import React, { useState } from 'react';
 import { Store, Phone, MapPin, Clock, Bell, Leaf, Star } from 'lucide-react';
 
 function App() {
-  const [email, setEmail] = useState('');
+  const [formData, setFormData] = useState({
+    firstName: '',
+    lastName: '',
+    phone: '',
+    email: ''
+  });
   const [isSubscribed, setIsSubscribed] = useState(false);
 
-  const handleSubscribe = (e: React.FormEvent) => {
+  interface FormData {
+    firstName: string;
+    lastName: string;
+    phone: string;
+    email: string;
+  }
+
+  interface InputChangeEvent extends React.ChangeEvent<HTMLInputElement> {}
+
+  const handleInputChange = (e: InputChangeEvent) => {
+    const { name, value } = e.target;
+    setFormData((prev: FormData) => ({ ...prev, [name]: value }));
+  };
+
+  interface SubscribeEvent extends React.MouseEvent<HTMLButtonElement, MouseEvent> {}
+
+  interface SubscribeHandler {
+    (e: SubscribeEvent): void;
+  }
+
+  const handleSubscribe: SubscribeHandler = (e) => {
     e.preventDefault();
-    if (email.trim()) {
+    if (
+      formData.firstName.trim() &&
+      formData.lastName.trim() &&
+      formData.phone.trim() &&
+      formData.email.trim()
+    ) {
       setIsSubscribed(true);
-      setEmail('');
+      setFormData({ firstName: '', lastName: '', phone: '', email: '' });
       setTimeout(() => setIsSubscribed(false), 3000);
     }
   };
 
   return (
-  <div className="min-h-screen bg-offwhite">
+    <div className="min-h-screen bg-offwhite">
       {/* Header */}
-  <header className="bg-white shadow-sm">
+      <header className="bg-white shadow-sm">
         <div className="container mx-auto px-4 py-5">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
@@ -66,10 +96,35 @@ function App() {
               {!isSubscribed ? (
                 <div className="space-y-4">
                   <input
+                    type="text"
+                    name="firstName"
+                    value={formData.firstName}
+                    onChange={handleInputChange}
+                    placeholder="First Name"
+                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-all"
+                  />
+                  <input
+                    type="text"
+                    name="lastName"
+                    value={formData.lastName}
+                    onChange={handleInputChange}
+                    placeholder="Last Name"
+                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-all"
+                  />
+                  <input
+                    type="tel"
+                    name="phone"
+                    value={formData.phone}
+                    onChange={handleInputChange}
+                    placeholder="Phone Number"
+                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-all"
+                  />
+                  <input
                     type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="Your email address"
+                    name="email"
+                    value={formData.email}
+                    onChange={handleInputChange}
+                    placeholder="Email Address"
                     className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-all"
                   />
                   <button
@@ -127,7 +182,7 @@ function App() {
         </div>
 
         {/* Store Info */}
-  <div className="bg-primary text-white rounded-2xl shadow-2xl p-10 max-w-4xl mx-auto">
+        <div className="bg-primary text-white rounded-2xl shadow-2xl p-10 max-w-4xl mx-auto">
           <div className="text-center mb-10">
             <h3 className="text-3xl font-bold mb-4">Meanwhile, We're Open</h3>
             <p className="text-gray-300 text-lg">
@@ -166,7 +221,7 @@ function App() {
       </main>
 
       {/* Footer */}
-  <footer className="bg-primary text-white py-8 mt-16 border-t-4 border-secondary">
+      <footer className="bg-primary text-white py-8 mt-16 border-t-4 border-secondary">
         <div className="container mx-auto px-4 text-center">
           <div className="flex items-center justify-center mb-3">
             <div className="bg-secondary p-2 rounded-lg mr-3">
